@@ -1,0 +1,111 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username for all VMs"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Admin password for all VMs"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS1_v2",
+      "metadata": {
+        "description": "VM size for all virtual machines"
+      }
+    },
+    "eastusVnetName": {
+      "type": "string",
+      "defaultValue": "EastUSVNet"
+    },
+    "eastus2VnetName": {
+      "type": "string",
+      "defaultValue": "EastUS2VNet"
+    },
+    "locationEastUS": {
+      "type": "string",
+      "defaultValue": "East US"
+    },
+    "locationEastUS2": {
+      "type": "string",
+      "defaultValue": "East US 2"
+    }
+  },
+  "variables": {
+    "networkTemplateUri": "<URL-to-your-network-template.json>",
+    "computeTemplateUri": "<URL-to-your-compute-template.json>"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-04-01",
+      "name": "networkResourcesDeployment",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('networkTemplateUri')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "eastusVnetName": {
+            "value": "[parameters('eastusVnetName')]"
+          },
+          "eastus2VnetName": {
+            "value": "[parameters('eastus2VnetName')]"
+          },
+          "locationEastUS": {
+            "value": "[parameters('locationEastUS')]"
+          },
+          "locationEastUS2": {
+            "value": "[parameters('locationEastUS2')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-04-01",
+      "name": "computeResourcesDeployment",
+      "dependsOn": [
+        "networkResourcesDeployment"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('computeTemplateUri')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "vmSize": {
+            "value": "[parameters('vmSize')]"
+          },
+          "eastusVnetName": {
+            "value": "[parameters('eastusVnetName')]"
+          },
+          "eastus2VnetName": {
+            "value": "[parameters('eastus2VnetName')]"
+          },
+          "locationEastUS": {
+            "value": "[parameters('locationEastUS')]"
+          },
+          "locationEastUS2": {
+            "value": "[parameters('locationEastUS2')]"
+          }
+        }
+      }
+    }
+  ]
+}

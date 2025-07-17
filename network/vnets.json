@@ -1,0 +1,116 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {},
+  "variables": {
+    "eastusVnetName": "EastUSVNet",
+    "eastus2VnetName": "EastUS2VNet"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-05-01",
+      "name": "[variables('eastusVnetName')]",
+      "location": "East US",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["10.0.0.0/16"]
+        },
+        "subnets": [
+          {
+            "name": "webSubnet",
+            "properties": {
+              "addressPrefix": "10.0.1.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-05-01",
+      "name": "[variables('eastus2VnetName')]",
+      "location": "East US 2",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["10.1.0.0/16"]
+        },
+        "subnets": [
+          {
+            "name": "backendSubnet",
+            "properties": {
+              "addressPrefix": "10.1.1.0/24"
+            }
+          },
+          {
+            "name": "AzureFirewallSubnet",
+            "properties": {
+              "addressPrefix": "10.1.2.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+      "apiVersion": "2022-05-01",
+      "name": "EastUSToEastUS2",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('eastusVnetName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName'))]"
+      ],
+      "properties": {
+        "remoteVirtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName'))]"
+        },
+        "allowVirtualNetworkAccess": true,
+        "allowForwardedTraffic": true,
+        "allowGatewayTransit": false,
+        "useRemoteGateways": false,
+        "enableVirtualNetworkAccess": true,
+        "enableEncryption": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/azureFirewalls",
+      "apiVersion": "2022-05-01",
+      "name": "eastus2Firewall",
+      "location": "East US 2",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName'))]"
+      ],
+      "properties": {
+        "sku": {
+          "name": "AZFW_VNet",
+          "tier": "Standard"
+        },
+        "ipConfigurations": [
+          {
+            "name": "azureFirewallIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName')), '/subnets/AzureFirewallSubnet')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'eastus2FirewallPIP')]"
+              }
+            }
+          }
+        ],
+        "threatIntelMode": "Alert"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2022-05-01",
+      "name": "eastus2FirewallPIP",
+      "location": "East US 2",
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "sku": {
+          "name": "Standard"
+        }
+      }
+    }
+  ]
+}
