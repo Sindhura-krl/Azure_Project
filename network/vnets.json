@@ -1,17 +1,39 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {},
-  "variables": {
-    "eastusVnetName": "EastUSVNet",
-    "eastus2VnetName": "EastUS2VNet"
+  "parameters": {
+    "eastusVnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual network name in East US region"
+      }
+    },
+    "eastus2VnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual network name in East US 2 region"
+      }
+    },
+    "locationEastUS": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for East US resources"
+      }
+    },
+    "locationEastUS2": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for East US 2 resources"
+      }
+    }
   },
+  "variables": {},
   "resources": [
     {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2022-05-01",
-      "name": "[variables('eastusVnetName')]",
-      "location": "East US",
+      "name": "[parameters('eastusVnetName')]",
+      "location": "[parameters('locationEastUS')]",
       "properties": {
         "addressSpace": {
           "addressPrefixes": ["10.0.0.0/16"]
@@ -29,8 +51,8 @@
     {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2022-05-01",
-      "name": "[variables('eastus2VnetName')]",
-      "location": "East US 2",
+      "name": "[parameters('eastus2VnetName')]",
+      "location": "[parameters('locationEastUS2')]",
       "properties": {
         "addressSpace": {
           "addressPrefixes": ["10.1.0.0/16"]
@@ -54,20 +76,19 @@
     {
       "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
       "apiVersion": "2022-05-01",
-      "name": "EastUSToEastUS2",
+      "name": "[concat(parameters('eastusVnetName'), '-to-', parameters('eastus2VnetName'))]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('eastusVnetName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastusVnetName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastus2VnetName'))]"
       ],
       "properties": {
         "remoteVirtualNetwork": {
-          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName'))]"
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastus2VnetName'))]"
         },
         "allowVirtualNetworkAccess": true,
         "allowForwardedTraffic": true,
         "allowGatewayTransit": false,
         "useRemoteGateways": false,
-        "enableVirtualNetworkAccess": true,
         "enableEncryption": true
       }
     },
@@ -75,9 +96,9 @@
       "type": "Microsoft.Network/azureFirewalls",
       "apiVersion": "2022-05-01",
       "name": "eastus2Firewall",
-      "location": "East US 2",
+      "location": "[parameters('locationEastUS2')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastus2VnetName'))]"
       ],
       "properties": {
         "sku": {
@@ -89,7 +110,7 @@
             "name": "azureFirewallIpConfig",
             "properties": {
               "subnet": {
-                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('eastus2VnetName')), '/subnets/AzureFirewallSubnet')]"
+                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', parameters('eastus2VnetName')), '/subnets/AzureFirewallSubnet')]"
               },
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'eastus2FirewallPIP')]"
@@ -104,7 +125,7 @@
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2022-05-01",
       "name": "eastus2FirewallPIP",
-      "location": "East US 2",
+      "location": "[parameters('locationEastUS2')]",
       "properties": {
         "publicIPAllocationMethod": "Static",
         "sku": {

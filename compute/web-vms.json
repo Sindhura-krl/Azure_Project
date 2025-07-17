@@ -1,23 +1,84 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "variables": {
-    "availabilitySetName": "webAvailabilitySet",
-    "eastus": "East US",
-    "eastus2": "East US 2",
-    "vmSize": "Standard_DS1_v2",
-    "lbName": "webLoadBalancer",
-    "frontendIPConfigName": "LoadBalancerFrontEnd",
-    "backendPoolName": "webBackendPool",
-    "probeName": "healthProbe",
-    "lbRuleName": "httpRule"
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username for all VMs"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Admin password for all VMs"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS1_v2",
+      "metadata": {
+        "description": "VM size for all virtual machines"
+      }
+    },
+    "eastusVnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual network name in East US region"
+      }
+    },
+    "eastus2VnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual network name in East US 2 region"
+      }
+    },
+    "locationEastUS": {
+      "type": "string",
+      "defaultValue": "East US",
+      "metadata": {
+        "description": "Location for East US resources"
+      }
+    },
+    "locationEastUS2": {
+      "type": "string",
+      "defaultValue": "East US 2",
+      "metadata": {
+        "description": "Location for East US 2 resources"
+      }
+    },
+    "availabilitySetName": {
+      "type": "string",
+      "defaultValue": "webAvailabilitySet"
+    },
+    "lbName": {
+      "type": "string",
+      "defaultValue": "webLoadBalancer"
+    },
+    "frontendIPConfigName": {
+      "type": "string",
+      "defaultValue": "LoadBalancerFrontEnd"
+    },
+    "backendPoolName": {
+      "type": "string",
+      "defaultValue": "webBackendPool"
+    },
+    "probeName": {
+      "type": "string",
+      "defaultValue": "healthProbe"
+    },
+    "lbRuleName": {
+      "type": "string",
+      "defaultValue": "httpRule"
+    }
   },
+  "variables": {},
   "resources": [
     {
       "type": "Microsoft.Compute/availabilitySets",
       "apiVersion": "2023-03-01",
-      "name": "[variables('availabilitySetName')]",
-      "location": "[variables('eastus')]",
+      "name": "[parameters('availabilitySetName')]",
+      "location": "[parameters('locationEastUS')]",
       "properties": {
         "platformUpdateDomainCount": 5,
         "platformFaultDomainCount": 2
@@ -27,12 +88,12 @@
     {
       "type": "Microsoft.Network/loadBalancers",
       "apiVersion": "2022-05-01",
-      "name": "[variables('lbName')]",
-      "location": "[variables('eastus')]",
+      "name": "[parameters('lbName')]",
+      "location": "[parameters('locationEastUS')]",
       "properties": {
         "frontendIPConfigurations": [
           {
-            "name": "[variables('frontendIPConfigName')]",
+            "name": "[parameters('frontendIPConfigName')]",
             "properties": {
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'webLBPublicIP')]"
@@ -42,12 +103,12 @@
         ],
         "backendAddressPools": [
           {
-            "name": "[variables('backendPoolName')]"
+            "name": "[parameters('backendPoolName')]"
           }
         ],
         "probes": [
           {
-            "name": "[variables('probeName')]",
+            "name": "[parameters('probeName')]",
             "properties": {
               "protocol": "Http",
               "port": 80,
@@ -59,13 +120,13 @@
         ],
         "loadBalancingRules": [
           {
-            "name": "[variables('lbRuleName')]",
+            "name": "[parameters('lbRuleName')]",
             "properties": {
               "frontendIPConfiguration": {
-                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbName')), '/frontendIPConfigurations/', variables('frontendIPConfigName'))]"
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('lbName')), '/frontendIPConfigurations/', parameters('frontendIPConfigName'))]"
               },
               "backendAddressPool": {
-                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbName')), '/backendAddressPools/', variables('backendPoolName'))]"
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('lbName')), '/backendAddressPools/', parameters('backendPoolName'))]"
               },
               "protocol": "Tcp",
               "frontendPort": 80,
@@ -73,7 +134,7 @@
               "enableFloatingIP": false,
               "idleTimeoutInMinutes": 4,
               "probe": {
-                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbName')), '/probes/', variables('probeName'))]"
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('lbName')), '/probes/', parameters('probeName'))]"
               },
               "loadDistribution": "Default"
             }
@@ -81,11 +142,12 @@
         ]
       }
     },
+
     {
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2022-05-01",
       "name": "webLBPublicIP",
-      "location": "[variables('eastus')]",
+      "location": "[parameters('locationEastUS')]",
       "properties": {
         "publicIPAllocationMethod": "Static",
         "sku": {
@@ -98,9 +160,9 @@
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2022-05-01",
       "name": "nic-w1",
-      "location": "[variables('eastus')]",
+      "location": "[parameters('locationEastUS')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', 'EastUSVNet')]"
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastusVnetName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -108,12 +170,12 @@
             "name": "ipconfig1",
             "properties": {
               "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'EastUSVNet', 'webSubnet')]"
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('eastusVnetName'), 'webSubnet')]"
               },
               "privateIPAllocationMethod": "Dynamic",
               "loadBalancerBackendAddressPools": [
                 {
-                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbName')), '/backendAddressPools/', variables('backendPoolName'))]"
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('lbName')), '/backendAddressPools/', parameters('backendPoolName'))]"
                 }
               ]
             }
@@ -121,13 +183,14 @@
         ]
       }
     },
+
     {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2022-05-01",
       "name": "nic-w2",
-      "location": "[variables('eastus')]",
+      "location": "[parameters('locationEastUS')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', 'EastUSVNet')]"
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastusVnetName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -135,12 +198,12 @@
             "name": "ipconfig1",
             "properties": {
               "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'EastUSVNet', 'webSubnet')]"
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('eastusVnetName'), 'webSubnet')]"
               },
               "privateIPAllocationMethod": "Dynamic",
               "loadBalancerBackendAddressPools": [
                 {
-                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbName')), '/backendAddressPools/', variables('backendPoolName'))]"
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('lbName')), '/backendAddressPools/', parameters('backendPoolName'))]"
                 }
               ]
             }
@@ -153,22 +216,22 @@
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2023-03-01",
       "name": "w1",
-      "location": "[variables('eastus')]",
+      "location": "[parameters('locationEastUS')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]",
+        "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', 'nic-w1')]"
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('vmSize')]"
+          "vmSize": "[parameters('vmSize')]"
         },
         "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
         },
         "osProfile": {
           "computerName": "w1",
-          "adminUsername": "azureuser",
-          "adminPassword": "ChangeYourPassword123!"
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -185,31 +248,35 @@
             "version": "latest"
           },
           "osDisk": {
-            "createOption": "FromImage"
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
           }
         }
       }
     },
+
     {
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2023-03-01",
       "name": "w2",
-      "location": "[variables('eastus')]",
+      "location": "[parameters('locationEastUS')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]",
+        "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', 'nic-w2')]"
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('vmSize')]"
+          "vmSize": "[parameters('vmSize')]"
         },
         "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
         },
         "osProfile": {
           "computerName": "w2",
-          "adminUsername": "azureuser",
-          "adminPassword": "ChangeYourPassword123!"
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -226,95 +293,10 @@
             "version": "latest"
           },
           "osDisk": {
-            "createOption": "FromImage"
-          }
-        }
-      }
-    },
-
-    {
-      "type": "Microsoft.Network/networkInterfaces",
-      "apiVersion": "2022-05-01",
-      "name": "nic-ws11",
-      "location": "[variables('eastus2')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', 'EastUS2VNet')]"
-      ],
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipconfig1",
-            "properties": {
-              "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'EastUS2VNet', 'backendSubnet')]"
-              },
-              "privateIPAllocationMethod": "Dynamic"
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
             }
-          }
-        ],
-        "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'ws11NSG')]"
-        }
-      }
-    },
-
-    {
-      "type": "Microsoft.Network/networkSecurityGroups",
-      "apiVersion": "2022-05-01",
-      "name": "ws11NSG",
-      "location": "[variables('eastus2')]",
-      "properties": {
-        "securityRules": [
-          {
-            "name": "AllowRDPTraffic",
-            "properties": {
-              "priority": 100,
-              "protocol": "Tcp",
-              "access": "Allow",
-              "direction": "Inbound",
-              "sourceAddressPrefix": "*",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "*",
-              "destinationPortRange": "3389"
-            }
-          }
-        ]
-      }
-    },
-
-    {
-      "type": "Microsoft.Compute/virtualMachines",
-      "apiVersion": "2023-03-01",
-      "name": "WS11",
-      "location": "[variables('eastus2')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', 'nic-ws11')]"
-      ],
-      "properties": {
-        "hardwareProfile": {
-          "vmSize": "[variables('vmSize')]"
-        },
-        "osProfile": {
-          "computerName": "WS11",
-          "adminUsername": "azureuser",
-          "adminPassword": "ChangeYourPassword123!"
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'nic-ws11')]"
-            }
-          ]
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "MicrosoftWindowsServer",
-            "offer": "WindowsServer",
-            "sku": "2019-Datacenter",
-            "version": "latest"
-          },
-          "osDisk": {
-            "createOption": "FromImage"
           }
         }
       }
