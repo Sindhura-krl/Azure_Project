@@ -76,7 +76,7 @@
     {
       "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
       "apiVersion": "2022-05-01",
-      "name": "[concat(parameters('eastusVnetName'), '-to-', parameters('eastus2VnetName'))]",
+      "name": "[concat(parameters('eastusVnetName'), '/', concat(parameters('eastusVnetName'), '-to-', parameters('eastus2VnetName')))]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastusVnetName'))]",
         "[resourceId('Microsoft.Network/virtualNetworks', parameters('eastus2VnetName'))]"
