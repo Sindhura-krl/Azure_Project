@@ -39,8 +39,8 @@
     }
   },
   "variables": {
-    "networkTemplateUri": "https://github.com/Sindhura-krl/Azure_Project/main/network/vnets.json",
-    "computeTemplateUri": "https://github.com/Sindhura-krl/Azure_Project/main/compute/web-vms.json"
+    "networkTemplateUri": "https://raw.githubusercontent.com/Sindhura-krl/Azure_Project/refs/heads/main/network/vnets.json",
+    "computeTemplateUri": "https://raw.githubusercontent.com/Sindhura-krl/Azure_Project/refs/heads/main/compute/web-vms.json"
   },
   "resources": [
     {
